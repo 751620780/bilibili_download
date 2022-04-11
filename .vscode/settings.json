@@ -1,0 +1,108 @@
+{
+    //控制编辑器是否显示缩进参考线。
+    "editor.renderIndentGuides": true,
+    //控制 "查找小部件" 是否应在编辑器顶部添加额外的行。如果为 true, 则可以在 "查找小工具" 可见时滚动到第一行之外。
+    "editor.find.addExtraSpaceOnTop": false,
+    //在执行查找操作时，在编辑器中的选中文本中还是整个文件中进行查找。multiline: 选择多行内容时，自动打开“在选择中查找”。
+    "editor.find.autoFindInSelection": "multiline",
+    //以像素为单位控制字体大小。(当使用CTRL+"NUM+/-"按钮时字体大小也会跟随放缩)
+    "editor.fontSize": 18,
+    //一个制表符等于的空格数。在 #editor.detectIndentation# 启用时，根据文件内容，该设置可能会被覆盖。
+    "editor.tabSize": 4,
+    //控制折行的方式。off: 永不换行。
+    "editor.wordWrap": "on",
+    //在 #editor.wordWrap# 为 wordWrapColumn 或 bounded 时，控制编辑器的折行列。
+    "editor.wordWrapColumn": 360,
+    //设置编辑器中显示代码时使用连体字：例如->会变成“箭头”
+    "editor.fontLigatures": true,
+    //控制编辑器在键入一行后是否自动格式化该行。
+    "editor.formatOnType": true,
+    "editor.rulers": [200,300],
+    //VS code的资源过滤器，过滤显示部分文件
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        // "**/resources": true,
+        // "**/__init__.py":true,
+        // "**/bin":true,
+        // "**/data":true,
+        // // "virus":true,
+        // "document":true,
+    },
+    "files.autoGuessEncoding": true,
+    "files.encoding": "utf8",
+    "go.useCodeSnippetsOnFunctionSuggest": true,
+    "go.delveConfig": {
+        "debugAdapter": "legacy",
+    },
+    //以下是为Django开发而设定的参数
+    //设置python.exe程序的完整路径
+    "python.pythonPath": "C:\\ProgramData\\Anaconda2\\python.exe",
+    "python.formatting.provider": "yapf",
+    "python.linting.pydocstyleEnabled": false,
+    "python.linting.pylintArgs": [
+        "--load-plugins",
+        "pylint_django",
+        "--disable=E1101",
+        "--disable=W,C,D",
+    ],
+    //调整窗口的缩放级别。原始大小是 0，每次递增(例如 1)或递减(例如 -1)表示放大或缩小 20%。也可以输入小数以便以更精细的粒度调整缩放级别。
+    "window.zoomLevel": -1,//该值应当根据屏幕像素密度自行设定
+    //在VScode的资源管理器中当删除文件到回收站时是否进行确认操作。
+    "explorer.confirmDelete": true,
+    //在工作台中使用的图标主题，或指定 "null" 以不显示任何文件图标。
+    "workbench.iconTheme": "vscode-icons",
+    //针对特定语言（不是文件的后缀名，语言名可以在选择语言时查看）
+    "[html]": {
+        "editor.defaultFormatter": "lonefy.vscode-JS-CSS-HTML-formatter"
+    },
+    "[css]": {
+        "editor.defaultFormatter": "lonefy.vscode-JS-CSS-HTML-formatter"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "lonefy.vscode-JS-CSS-HTML-formatter"
+    },
+    "[json]": {
+        "editor.defaultFormatter":"vscode.json-language-features"
+    },
+    "[bat]":{//针对windows的shell脚本
+        //设置文字编码格式为gb2312
+        "files.encoding":"gb2312",
+    },
+    
+    //设置bracket-pair-colorizer-2插件对所有源代码中{},[],()的颜色高亮
+    "bracket-pair-colorizer-2.colors": [
+        "Gold",
+        "Orchid",
+        "LightSkyBlue"
+    ],
+    //设置bracket-pair-colorizer-2插件在相邻的{},[],()的颜色保持一致
+    "bracket-pair-colorizer-2.forceUniqueOpeningColor":false,
+    "markdown.styles": [],
+    "todo-tree.tree.showBadges": true,
+    "todo-tree.tree.disableCompactFolders": true,
+    "todo-tree.tree.showCountsInTree": false,
+    
+    "git.ignoreLimitWarning": true,
+    "workbench.tree.indent": 16,
+    "todo-tree.tree.showScanModeButton": false,
+    "vsicons.dontShowNewVersionMessage": true,
+    "python.showStartPage": false,
+    "workbench.startupEditor": "newUntitledFile",
+    "go.toolsManagement.autoUpdate": true,
+    "todo-tree.general.tags": [
+        "BUG",
+        "HACK",
+        "FIXME",
+        "TODO",
+        "XXX",
+        "[ ]",
+        "[x]"
+    ],
+    "todo-tree.regex.regex": "(//|#|<!--|;|/\\*|^|^\\s*(-|\\d+.))\\s*($TAGS)",
+    "python.defaultInterpreterPath": "C:\\ProgramData\\Anaconda2\\python.exe",
+    "workbench.colorTheme": "Visual Studio Dark",
+    "terminal.integrated.defaultProfile.windows": "Command Prompt",
+    "terminal.integrated.automationShell.windows": "C:\\windows\\system32\\cmd.exe",
+
+}

@@ -258,8 +258,8 @@ func main() {
 	} else {
 		fmt.Printf("all %d files will be download.\n", len(bfis))
 	}
-	exitCode, stdOutput, _, _ := RunCmd("you-get --version")
-	if exitCode != 0 || !strings.Contains(stdOutput, "version") {
+	exitCode, _, _, _ := RunCmd("you-get --version")
+	if exitCode != 0 {
 		fmt.Printf(`
 下载失败！
 您还没有安装you-get，请您按照如下步骤检查：
