@@ -1,7 +1,4 @@
 {
-    //控制编辑器是否显示缩进参考线。
-    "editor.renderIndentGuides": true,
-    //控制 "查找小部件" 是否应在编辑器顶部添加额外的行。如果为 true, 则可以在 "查找小工具" 可见时滚动到第一行之外。
     "editor.find.addExtraSpaceOnTop": false,
     //在执行查找操作时，在编辑器中的选中文本中还是整个文件中进行查找。multiline: 选择多行内容时，自动打开“在选择中查找”。
     "editor.find.autoFindInSelection": "multiline",
@@ -47,7 +44,7 @@
         "--disable=W,C,D",
     ],
     //调整窗口的缩放级别。原始大小是 0，每次递增(例如 1)或递减(例如 -1)表示放大或缩小 20%。也可以输入小数以便以更精细的粒度调整缩放级别。
-    "window.zoomLevel": -1,//该值应当根据屏幕像素密度自行设定
+    "window.zoomLevel": 1,//该值应当根据屏幕像素密度自行设定
     //在VScode的资源管理器中当删除文件到回收站时是否进行确认操作。
     "explorer.confirmDelete": true,
     //在工作台中使用的图标主题，或指定 "null" 以不显示任何文件图标。
@@ -104,5 +101,6 @@
     "workbench.colorTheme": "Visual Studio Dark",
     "terminal.integrated.defaultProfile.windows": "Command Prompt",
     "terminal.integrated.automationShell.windows": "C:\\windows\\system32\\cmd.exe",
+    "editor.guides.indentation": true,
 
 }

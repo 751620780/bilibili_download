@@ -204,7 +204,8 @@ func DownloadFiles(bfis []*BiliFileInfo, saveDir string) {
 				if bfi == nil {
 					return
 				}
-				cmdLine := fmt.Sprintf(`you-get -o "%s" -O "%s" --skip-existing-file-size-check %s --no-caption --debug`, downloadDir, bfi.Name, bfi.Url)
+				fileName := fmt.Sprintf("%d_%s", bfi.Index+1, bfi.Name)
+				cmdLine := fmt.Sprintf(`you-get -o "%s" -O "%s" --skip-existing-file-size-check %s --no-caption --debug`, downloadDir, fileName, bfi.Url)
 				exitCode, stdOutput, errOutput, err := RunCmd(cmdLine)
 				if exitCode != 0 {
 					fmt.Printf("download failed: index=%d name=%s url=%s output=%s error_output=%s\n cmd_line=%s\n", bfi.Index, bfi.Name, bfi.Url, stdOutput, errOutput, cmdLine)
