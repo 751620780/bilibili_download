@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -48,16 +49,20 @@ func DirExists(path string) bool {
 }
 
 type BiliFileInfo struct {
-	Name  string
-	Url   string
-	Index int
+	Name   string // 文件标题
+	Url    string // 下载视频的url
+	SubDir string // 保存的子文件夹
+	Index  int    // 下载文件的编号
 }
 
-func DoGet(request *http.Client, url string) ([]byte, error) {
+func DoGet(client *http.Client, url string) ([]byte, error) {
 
-	resp, err := request.Get(url)
+	req, _ := http.NewRequest("GET", url, nil)
+	// 增加请求头，绕过B站的爬虫检测
+	req.Header.Set("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36 Edg/106.0.1370.52")
+	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Printf(`DoGet failed when request.Get, url=%s, err: %s`, url, err.Error())
+		fmt.Printf(`DoGet failed when client.Get, url=%s, err: %s`, url, err.Error())
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -111,10 +116,10 @@ func GetDownloadFileListByUser(bilibiliUserId string) []*BiliFileInfo {
 		} `json:"data"`
 	}
 	ret := make([]*BiliFileInfo, 0, 1000)
-	request := http.Client{Timeout: time.Second * 5}
+	client := http.Client{Timeout: time.Second * 5}
 	// i 从1开始
 	for i := 1; i < math.MaxInt32; i++ {
-		responseData, err := DoGet(&request, fmt.Sprintf("https://api.bilibili.com/x/space/arc/search?mid=%s&ps=30&tid=0&pn=%d", bilibiliUserId, i))
+		responseData, err := DoGet(&client, fmt.Sprintf("https://api.bilibili.com/x/space/arc/search?mid=%s&ps=30&tid=0&pn=%d", bilibiliUserId, i))
 		if err != nil {
 			break
 		} else {
@@ -133,7 +138,19 @@ func GetDownloadFileListByUser(bilibiliUserId string) []*BiliFileInfo {
 			}
 
 			for _, v := range buvli.Data.List.Vlist {
-				ret = append(ret, &BiliFileInfo{Name: v.Title, Url: fmt.Sprintf("https://www.bilibili.com/video/%s", v.Bvid), Index: len(ret)})
+				// 判断这个视频是不是连续剧，如果是连续剧，下载到子文件夹下
+				fileList := GetDownloadFileListById(v.Bvid)
+				if len(fileList) > 1 {
+					// 剧集
+					for _, f := range fileList {
+						f.Index = len(ret)
+						f.SubDir = path.Join(v.Title, f.SubDir)
+						ret = append(ret, f)
+					}
+				} else {
+					// 单集
+					ret = append(ret, &BiliFileInfo{Name: v.Title, Url: fmt.Sprintf("https://www.bilibili.com/video/%s", v.Bvid), Index: len(ret), SubDir: "."})
+				}
 			}
 		}
 	}
@@ -176,7 +193,7 @@ func GetDownloadFileListById(bilibiliSeriesVideoId string) []*BiliFileInfo {
 			return ret
 		}
 		for _, v := range bsvli.Data {
-			ret = append(ret, &BiliFileInfo{Name: v.Part, Url: fmt.Sprintf("https://www.bilibili.com/video/%s?p=%d", bilibiliSeriesVideoId, v.Page), Index: len(ret)})
+			ret = append(ret, &BiliFileInfo{Name: v.Part, Url: fmt.Sprintf("https://www.bilibili.com/video/%s?p=%d", bilibiliSeriesVideoId, v.Page), Index: len(ret), SubDir: "."})
 		}
 	}
 
@@ -205,7 +222,11 @@ func DownloadFiles(bfis []*BiliFileInfo, saveDir string) {
 					return
 				}
 				fileName := fmt.Sprintf("%d_%s", bfi.Index+1, bfi.Name)
-				cmdLine := fmt.Sprintf(`you-get -o "%s" -O "%s" --skip-existing-file-size-check %s --no-caption --debug`, downloadDir, fileName, bfi.Url)
+				realDownloadDir := path.Join(downloadDir, bfi.SubDir)
+				if !DirExists(realDownloadDir) {
+					os.MkdirAll(realDownloadDir, 0666)
+				}
+				cmdLine := fmt.Sprintf(`you-get -o "%s" -O "%s" --skip-existing-file-size-check %s --no-caption --debug`, realDownloadDir, fileName, bfi.Url)
 				exitCode, stdOutput, errOutput, err := RunCmd(cmdLine)
 				if exitCode != 0 {
 					fmt.Printf("download failed: index=%d name=%s url=%s output=%s error_output=%s\n cmd_line=%s\n", bfi.Index, bfi.Name, bfi.Url, stdOutput, errOutput, cmdLine)
@@ -245,9 +266,9 @@ func main() {
 		err := os.MkdirAll(saveDir, 0666)
 		if err != nil {
 			fmt.Printf("os.MkdirAll(\"%s\", 0666) failed, err: %s", saveDir, err.Error())
+			PrintUsage()
+			os.Exit(-2)
 		}
-		PrintUsage()
-		os.Exit(-2)
 	}
 	if downloadType == "user" {
 		bfis = GetDownloadFileListByUser(id)
