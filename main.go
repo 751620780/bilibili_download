@@ -139,12 +139,12 @@ func GetDownloadFileListByUser(bilibiliUserId string) []*BiliFileInfo {
 
 			for _, v := range buvli.Data.List.Vlist {
 				// 判断这个视频是不是连续剧，如果是连续剧，下载到子文件夹下
-				fileList := GetDownloadFileListByIdNew(v.Bvid)
+				title, fileList := GetDownloadFileListByIdNew(v.Bvid)
 				if len(fileList) > 1 {
 					// 剧集
 					for _, f := range fileList {
 						f.Index = len(ret)
-						f.SubDir = path.Join(v.Title, f.SubDir)
+						f.SubDir = path.Join(title, f.SubDir)
 						ret = append(ret, f)
 					}
 				} else {
@@ -159,7 +159,7 @@ func GetDownloadFileListByUser(bilibiliUserId string) []*BiliFileInfo {
 }
 
 // 给定B站视频的bv号自动判断剧集还是单集，如果是剧集则获得所有剧集信息，如果是单集，返回单集信息
-func GetDownloadFileListByIdNew(bvid string) []*BiliFileInfo {
+func GetDownloadFileListByIdNew(bvid string) (string, []*BiliFileInfo) {
 	// step1:通过接口查询bvid关联的剧集的列表
 	// https://api.bilibili.com/x/web-interface/view?bvid=BV1fT411M7Zt
 	// 存在三种情况：
@@ -176,6 +176,7 @@ func GetDownloadFileListByIdNew(bvid string) []*BiliFileInfo {
 			Bvid   string `json:"bvid"`
 			Aid    int    `json:"aid"`
 			Videos int    `json:"videos"` // 值大于1，是第一种情况，使用Pages中的数据，表示剧集下的视频数量
+			Title  string `json:"title"`  // 情况1时，剧集的标题
 			Owner  struct {
 				Mid  int    `json:"mid"`
 				Name string `json:"name"`
@@ -183,9 +184,9 @@ func GetDownloadFileListByIdNew(bvid string) []*BiliFileInfo {
 			} `json:"owner"` // 视频拥有者
 			Pages []struct {
 				Cid       int    `json:"cid"`
-				Page      int    `json:"page"`
+				Page      int    `json:"page"` // 视频在剧集中的编号
 				From      string `json:"from"`
-				Part      string `json:"part"`
+				Part      string `json:"part"` // 视频名字
 				Duration  int    `json:"duration"`
 				Vid       string `json:"vid"`
 				Weblink   string `json:"weblink"`
@@ -197,7 +198,8 @@ func GetDownloadFileListByIdNew(bvid string) []*BiliFileInfo {
 				FirstFrame string `json:"first_frame"`
 			} `json:"pages"` // 情况1时的视频列表
 			UgcSeason struct {
-				ID       int `json:"id"`
+				ID       int    `json:"id"`
+				Title    string `json:"title"` // 情况2时，剧集的标题
 				Sections []struct {
 					SeasonID int `json:"season_id"`
 					ID       int `json:"id"`
@@ -216,27 +218,28 @@ func GetDownloadFileListByIdNew(bvid string) []*BiliFileInfo {
 			} `json:"ugc_season"`
 		} `json:"data"`
 	}
-
+	title := ""
 	ret := make([]*BiliFileInfo, 0, 1000)
 	client := http.Client{Timeout: time.Second * 5}
 	responseData, err := DoGet(&client, fmt.Sprintf("https://api.bilibili.com/x/web-interface/view?bvid=%s", bvid))
 	if err != nil {
-		return ret
+		return title, ret
 	} else {
 		bsi := BvidSeriesInfo{}
 		err = json.Unmarshal(responseData, &bsi)
 		if err != nil {
 			fmt.Printf("json.Unmarshal failed, responseData=%s, err:%s", string(responseData), err.Error())
-			return ret
+			return title, ret
 		}
 		if bsi.Code != 0 {
 			fmt.Printf("code=%d, responseData:%s", bsi.Code, string(responseData))
-			return ret
+			return title, ret
 		}
 		if len(bsi.Data.Pages) > 1 {
 			// 情况1
+			title = bsi.Data.Title
 			for _, v := range bsi.Data.Pages {
-				ret = append(ret, &BiliFileInfo{Name: v.Part, Url: fmt.Sprintf("https://www.bilibili.com/video/%s?p=%d", bvid, v.Page), Index: len(ret), SubDir: "."})
+				ret = append(ret, &BiliFileInfo{Name: fmt.Sprintf("%d_%s", v.Page, v.Part), Url: fmt.Sprintf("https://www.bilibili.com/video/%s?p=%d", bvid, v.Page), Index: len(ret), SubDir: "."})
 			}
 		} else if len(bsi.Data.Pages) == 1 && bsi.Data.UgcSeason.EpCount == 0 {
 			// 情况3
@@ -244,13 +247,14 @@ func GetDownloadFileListByIdNew(bvid string) []*BiliFileInfo {
 			ret = append(ret, &BiliFileInfo{Name: v.Part, Url: fmt.Sprintf("https://www.bilibili.com/video/%s", bvid), Index: len(ret), SubDir: "."})
 		} else if bsi.Data.UgcSeason.EpCount > 0 {
 			// 情况2
+			title = bsi.Data.UgcSeason.Title
 			for i, v := range bsi.Data.UgcSeason.Sections[0].Episodes {
 				ret = append(ret, &BiliFileInfo{Name: fmt.Sprintf("%d_%s", i+1, v.Title), Url: fmt.Sprintf("https://www.bilibili.com/video/%s", v.Bvid), Index: len(ret), SubDir: "."})
 			}
 		}
 	}
 
-	return ret
+	return title, ret
 }
 
 func GetDownloadFileListById(bilibiliSeriesVideoId string) []*BiliFileInfo {
@@ -315,7 +319,7 @@ func DownloadFiles(bfis []*BiliFileInfo, saveDir string) {
 				if bfi == nil {
 					return
 				}
-				fileName := fmt.Sprintf("%d_%s", bfi.Index+1, bfi.Name)
+				fileName := fmt.Sprintf(bfi.Name)
 				realDownloadDir := path.Join(downloadDir, bfi.SubDir)
 				if !DirExists(realDownloadDir) {
 					os.MkdirAll(realDownloadDir, 0666)
@@ -367,7 +371,7 @@ func main() {
 	if downloadType == "user" {
 		bfis = GetDownloadFileListByUser(id)
 	} else if downloadType == "series" {
-		bfis = GetDownloadFileListByIdNew(id)
+		_, bfis = GetDownloadFileListByIdNew(id)
 	}
 	// 去除重复文件
 	bfisNew := make([]*BiliFileInfo, 0, 1000)
