@@ -51,7 +51,7 @@
     "workbench.iconTheme": "vscode-icons",
     //针对特定语言（不是文件的后缀名，语言名可以在选择语言时查看）
     "[html]": {
-        "editor.defaultFormatter": "lonefy.vscode-JS-CSS-HTML-formatter"
+        "editor.defaultFormatter": "vscode.html-language-features"
     },
     "[css]": {
         "editor.defaultFormatter": "lonefy.vscode-JS-CSS-HTML-formatter"
