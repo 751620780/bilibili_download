@@ -17,6 +17,37 @@ import (
 	"time"
 )
 
+// 内存数据写入文件
+func WriteMemFileToDisk(fileName string, data []byte) error {
+	dirName := path.Dir(fileName)
+	if !DirExists(dirName) {
+		os.MkdirAll(dirName, 0777)
+	}
+	return ioutil.WriteFile(fileName, data, 0666)
+}
+
+// 获得本进程可执行程序的完整路径
+func GetExecutableFullPath() string {
+	exePath, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	exePath, err = filepath.Abs(exePath)
+	if err != nil {
+		return ""
+	}
+	return exePath
+}
+
+// 判断文件是否存在
+func FileExists(path string) bool {
+	fi, err := os.Stat(path)
+	if err == nil {
+		return !fi.IsDir()
+	}
+	return false
+}
+
 func RunCmd(command string) (exitCode int, stdOutput string, errOutput string, err error) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -212,7 +243,7 @@ func GetDownloadFileListByIdNew(bvid string) (string, []*BiliFileInfo) {
 						Cid       int    `json:"cid"`
 						Title     string `json:"title"` // 视频名称
 						Bvid      string `json:"bvid"`  // 每一个剧集的bvid
-					} `json:"episodes"` // 情况二时剧集列表，索引是视频编号
+					} `json:"episodes"` // 情况二时，剧集列表，索引是视频编号
 				} `json:"sections"` // 情况二时可能属于不同的分组，这里使用第一组即可
 				EpCount int `json:"ep_count"` // 情况二时，剧集的数量
 			} `json:"ugc_season"`
@@ -386,9 +417,9 @@ func main() {
 	bfis = bfisNew
 
 	if len(bfis) == 0 {
-		fmt.Println("no files found")
+		fmt.Println("没有文件需要下载")
 	} else {
-		fmt.Printf("all %d files will be download.\n", len(bfis))
+		fmt.Printf("一共有 %d 个文件将会被下载.\n", len(bfis))
 	}
 	exitCode, _, _, _ := RunCmd("you-get --version")
 	if exitCode != 0 {
@@ -401,6 +432,13 @@ func main() {
 	4. 确认将python3的Scripts目录添加到环境变量
 	`)
 		os.Exit(-1)
+	}
+	// 如果存在bat文件则不写入，否则创建并写入该文件
+	exePath := GetExecutableFullPath()
+	targetFile := path.Join(saveDir, "0.cmd")
+	if !FileExists(targetFile) {
+		fileDate := fmt.Sprintf("\"%s\"  %s  %s  \"%s\"", exePath, downloadType, id, saveDir)
+		WriteMemFileToDisk(targetFile, []byte(fileDate))
 	}
 	DownloadFiles(bfis, saveDir)
 }
