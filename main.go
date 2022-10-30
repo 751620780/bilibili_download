@@ -15,7 +15,19 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
 )
+
+func Utf8ToGbk(s []byte) ([]byte, error) {
+	reader := transform.NewReader(bytes.NewReader(s), simplifiedchinese.GBK.NewEncoder())
+	d, e := ioutil.ReadAll(reader)
+	if e != nil {
+		return nil, e
+	}
+	return d, nil
+}
 
 // 内存数据写入文件
 func WriteMemFileToDisk(fileName string, data []byte) error {
@@ -437,8 +449,9 @@ func main() {
 	exePath := GetExecutableFullPath()
 	targetFile := path.Join(saveDir, "0.cmd")
 	if !FileExists(targetFile) {
-		fileDate := fmt.Sprintf("\"%s\"  %s  %s  \"%s\"", exePath, downloadType, id, saveDir)
-		WriteMemFileToDisk(targetFile, []byte(fileDate))
+		fileString := fmt.Sprintf("\"%s\"  %s  %s  \"%s\"", exePath, downloadType, id, saveDir)
+		fileDate, _ := Utf8ToGbk([]byte(fileString))
+		WriteMemFileToDisk(targetFile, fileDate)
 	}
 	DownloadFiles(bfis, saveDir)
 }
